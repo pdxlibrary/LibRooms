@@ -32,9 +32,9 @@ Once a user account exists, the user may be given elevated permissions on the Us
 When a user logs-in their account will be synched with the User Authentication Source and updated with any changes.
 
 # CSS Styling
-core styles: <application_root>/css/core.css
-calendar styles: <application_root>/css/calendar.css
-IE specific styles: <application_root>/css/core-ie.css
+- core styles: <application_root>/css/core.css
+- calendar styles: <application_root>/css/calendar.css
+- IE specific styles: <application_root>/css/core-ie.css
 
 # Authentication
 Can be set to use III PatronAPI, Ex Libris Alma or CAS as the Authentication Source
@@ -53,5 +53,4 @@ Email templates for notices: <application_root>/email_templates/*
 
 # Scheduled tasks 
 /cron.php
-Loads/updates reservation calendar hours, cancels reservations for no shows, sends overdue notices
-Recommended Schedule: run every 15 minutes
+Loads/updates reservation calendar hours, cancels reservations for no shows, sends overdue notices. Recommended Schedule: run every 15 minutes.
