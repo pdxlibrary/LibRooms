@@ -1,0 +1,1 @@
+<?phprequire_once("../../load.php");// load hours for each day of reservation window$selected_date = date('Y-m-d',strtotime("now"));for($i=0;$i<MAX_FUTURE_RES_DAYS;$i++){	$date = date("Y-m-d",strtotime("+".$i." days",strtotime($selected_date)));	$available_hours[$date] = load_hours($db,$date);}print(json_encode($available_hours));?>

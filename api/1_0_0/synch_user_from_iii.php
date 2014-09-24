@@ -1,0 +1,1 @@
+<?phprequire_once("../../load.php");$patron_id = $_GET['patron_id'];print(json_encode(synch_user_from_iii($patron_id)));?>

@@ -1,0 +1,4 @@
+Study Room {room_number} is overdue. Study Rooms are in high demand. Please return the key to the Circulation Desk immediately to ensure fair access. Overdue fines are $1 per hour. If the library must replace the key, you will be charged a $135 replacement fee. Charges are non-refundable. If you have any questions, please contact the Circulation Desk: <a href='mailto:circ@lists.pdx.edu'>circ@lists.pdx.edu</a> or call 503-725-5874.
+
+For more information, visit our <a href='http://development.library.pdx.edu/studyroomfaq.html'>Frequently Asked Questions (FAQ)</a>.
+

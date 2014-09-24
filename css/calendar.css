@@ -1,0 +1,73 @@
+.screen_reader_content {position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;}
+
+#PSUContent td {font-size:10px; padding:0;}
+.odd {background:#FFFFFF; vertical-align:top}
+.even {background: none repeat scroll 0 0 #ECFFEC; vertical-align:top}
+
+.reservation_calendar {font-size:1084px; width:1084px; table-layout:fixed; }
+.reservation_calendar td {border: 1px solid #DDDDDD; font-size: 10px; padding: 0; height:40px;}
+.reservation_calendar th {border: 1px solid #DDDDDD; font-size: 9px; padding: 0; text-align:left; font-weight:normal;}
+.reservation_calendar a {color: #FFFFFF;}
+
+.slot_highlight {background-color:#00FF00;}
+.slot_available {}
+.slot_reserved {background-color:#8B5742;}
+.slot_held_light {background-color:#FCD199;}
+.slot_held_light_fcfs {background-color: #FCD199;}
+.slot_historic {background-color:#999;}
+.slot_unavailable {background-color:#999;}
+.slot_fcfs {background-color: #EEB4B4;}
+.slot_too_short {}
+.slot_checked_out {background-color: #8B5742;}
+.slot_completed_reservation {background-color: #8B5742;}
+.slot_held {background-color:#FCD116;}
+.slot_held_fcfs {background-color: #FCD116;}
+.my_reservation {background-color: #00688B;}
+.rescheduling {background-color: #FFFFFF; border:1px solid #F39; color:#F0F;}
+
+
+#content {overflow: visible; padding: 0;}
+.tooltip {background-image: url("../images/black_arrow_big.png"); color: #FFFFFF; display: none; font-size: 11px; height: 73px; padding: 15px 20px; width: 148px; z-index: 4;}
+.tooltip a {color: #AADD44; font-weight: bold;}
+
+#calendar_filter_form  {width:630px; }
+
+#calendar_date_tabs {margin-left: 5px; padding:0; }
+#calendar_date_tabs ul {list-style: none outside none; margin:0; padding-left:2px;}
+#calendar_date_tabs .calendar_date_tab {
+	margin: 0 2px 0 2px; 
+	float: left; 
+	border: 1px solid #5C7200; 
+	list-style-type: none; 
+	border-bottom-width: 0; 
+	background-color: #5C7200; 
+	color: #FFF; 
+	border: 1px solid #5C7200; border-radius: 5px 5px 0 0; 
+	font-size: 12px; 
+	padding: 5px; 
+	text-align: center; 
+	background: #5C7200;
+}
+#calendar_date_tabs .calendar_date_tab a {color: #FFF;}
+#calendar_date_tabs .calendar_date_tab_selected {
+	float: left;
+	list-style-type: none;
+	background-color: #FFF; 
+	border-radius: 5px 5px 0 0; 
+	font-size: 12px; 
+	padding: 5px; 
+	text-align: center;
+	position: relative;
+	border-color: #5C7200;
+    border-style: solid;
+	border-width: 1px 1px 0;
+	border-bottom: 1px solid #FFF;
+	top: 1px;
+	margin: 0 2px 0 2px;
+	font-weight: bold;
+	background: #FFF;
+}
+
+.room_group_header {font-weight: bold; padding-bottom: 4px; padding-top: 10px;}
+
+#calendar_container {clear: both; border:1px solid #5C7200; border-radius:5px; padding:10px; }

@@ -1,0 +1,549 @@
+<script type="text/javascript">
+
+// room numbers by room id
+var rooms = new Array();
+
+<?php
+
+	if(isset($_GET['selected_capacity']))
+		$selected_capacity = $_GET['selected_capacity'];
+	else
+		$selected_capacity = "";
+
+	$possible_amenities = array();
+	if(isset($_GET['amenities']))
+		$selected_amenities = $_GET['amenities'];
+
+	foreach($all_rooms as $room_index => $room)
+	{
+		if(isset($room->attributes))
+		{
+			$room_attributes = array();
+			foreach($room->attributes as $attribute)
+			{
+				$possible_amenities[$attribute->id] = $attribute->name;
+				$room_attributes[] = $attribute->id;
+			}
+			if(isset($selected_amenities))
+			{
+				foreach($selected_amenities as $amenity_id)
+				{
+					if(!in_array($amenity_id,$room_attributes))
+						unset($rooms[$room_index]);
+				}
+			}
+		}
+		else
+		{
+			if(isset($selected_amenities))
+			{
+				unset($rooms[$room_index]);
+			}
+		}
+		
+		if(isset($selected_capacity) && strcmp($selected_capacity,''))
+		{
+			if($room->capacity < $selected_capacity)
+				unset($rooms[$room_index]);
+		}
+		
+		print("rooms[$room->id] = $room->room_number;\n");
+	}
+	
+	// load default amenity filters
+	if(!isset($selected_amenities))
+	{
+		$selected_amenities = array();
+		//foreach($possible_amenities as $amenity_id => $amenity)
+		//	$selected_amenities[] = $amenity_id;
+	}
+
+?>
+
+
+// limit should be determined by max reservation length for room * fractional hours. (Ex. 2 hours * 4 slots per hour = 8)
+var max_reservation_length_slots = <?php print((DEFAULT_MAX_RES_LEN/60)*(60/RES_PRECISION)); ?>;
+var min_reservation_length_slots = <?php print((DEFAULT_MIN_RES_LEN/60)*(60/RES_PRECISION)); ?>;
+var selected_start_time = "";
+var selected_end_time = "";
+var selected_room = "";
+
+function reset_calendar() {
+	// reset previous selection
+	$("#reservation_calendar td.slot_held").removeClass("slot_held").addClass("slot_available");
+	$("#reservation_calendar td.slot_held_fcfs").removeClass("slot_held_fcfs").addClass("slot_fcfs");
+	$("#reservation_calendar td.slot_held_light").addClass("slot_available");
+	$("#reservation_calendar td.slot_held_light_fcfs").addClass("slot_fcfs");
+	$("#reservation_calendar td").removeClass("slot_held_light");
+	$("#reservation_calendar td").removeClass("slot_held_light_fcfs");
+	$("#tooltip").toggle(false);
+}
+
+$(document).ready(function() {
+
+	
+	// auto-refresh calendar if idle
+	var timeout = 60000; // milliseconds
+	$(document).bind("idle.idleTimer", function(){
+		window.location.reload();
+	});
+	$(document).bind("active.idleTimer", function(){
+		 // user is active
+	});
+	$.idleTimer(timeout);
+	
+	$("#reservation_calendar tr:even").addClass("even");
+	$("#reservation_calendar tr:odd").addClass("odd");
+	
+	
+	$(document).keyup(function(e) {
+		if (e.keyCode == 27) {
+			reset_calendar();
+		}
+	});
+	
+	
+	var on_cal = false;
+
+
+	$("td").mouseover(function() {
+	
+		if($(this).hasClass("slot_held_light") || $(this).hasClass("slot_held_light_fcfs"))
+		{
+			var hover_end_time_id = $(this).attr("id");
+			var hover_end_time_parts = hover_end_time_id.split("-");
+			var hover_room = hover_end_time_parts[0];
+			var hover_end_time = hover_end_time_parts[1];
+			
+			
+			// add res_presision to the time to get the ending time of the selected reservation
+			var year = hover_end_time.substring(0,4);
+			var month = hover_end_time.substring(4,6);
+			var day = hover_end_time.substring(6,8);
+			var hour = hover_end_time.substring(8,10);
+			var min = hover_end_time.substring(10,12);
+			var sec = hover_end_time.substring(12,14);
+			//alert(year+"-"+month+"-"+day+"-"+hour+"-"+min+"-"+sec);
+			var newDateObj = new Date();
+			var oldDateObj = new Date(year,month,day,hour,min,sec);
+			newDateObj.setTime(oldDateObj.getTime() + (<?php print(RES_PRECISION); ?> * 60 * 1000));
+			var hour = newDateObj.getHours();
+			var min = newDateObj.getMinutes().toString();
+			if(min.length == 1) min = "0"+min;
+
+			hover_end_time_display = hour;
+			
+			
+			
+			if(hour >= 24)
+			{
+				if(hour > 24)
+					hour -= 24;
+				else
+					hour -= 12;
+				hover_end_time_display = hour.toString() + ":" + min + "am";
+			}
+			else if(hour >= 12)
+			{
+				if(hour > 12)
+					hour -= 12;
+				hover_end_time_display = hour.toString() + ":" + min + "pm";
+			}
+			else if(hour == 0)
+			{
+				hour = 12;
+				hover_end_time_display = "12:" + min + "am";
+			}
+			else
+			{
+				hover_end_time_display = hour.toString() + ":" + min + "am";
+			}
+			$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><b>Room "+rooms[hover_room]+"</b><br><img src='images/checkmark.gif' align='left' /> Start Time: "+selected_start_time_display+"<br>End Time: <i>"+hover_end_time_display+"</i><br><br><center>Select End Time</center>");
+		}
+
+	});
+	
+	
+	$("td.slot_available").click(function() {
+		
+		if($(this).hasClass("slot_held_light"))
+		{
+			// TODO: account for RES_PRECISION == MIN_RES_LEN_MIN (allow end_time slot to be start_time slot in that case)
+		
+			$(this).addClass("slot_held");
+			var prev = $(this).prev();
+			while($(prev).hasClass('slot_held_light'))
+			{
+				$(prev).addClass("slot_held");
+				prev = $(prev).prev();
+			}
+			
+			$("#reservation_calendar td.slot_held_light").removeClass("slot_held_light").addClass("slot_available");
+			
+			var selected_end_time_id = $(this).attr("id");
+			var selected_end_time_parts = selected_end_time_id.split("-");
+			selected_room = selected_end_time_parts[0];
+			selected_end_time = selected_end_time_parts[1];
+			
+			// add res_presision to the time to get the ending time of the selected reservation
+			var year = selected_end_time.substring(0,4);
+			var month = selected_end_time.substring(4,6);
+			var day = selected_end_time.substring(6,8);
+			var hour = selected_end_time.substring(8,10);
+			var min = selected_end_time.substring(10,12);
+			var sec = selected_end_time.substring(12,14);
+			//alert(year+"-"+month+"-"+day+"-"+hour+"-"+min+"-"+sec);
+			var newDateObj = new Date();
+			var oldDateObj = new Date(year,month,day,hour,min,sec);
+			newDateObj.setTime(oldDateObj.getTime() + (<?php print(RES_PRECISION); ?> * 60 * 1000));
+			//alert(oldDateObj.toString());
+			//alert(newDateObj.toString());
+			var year = newDateObj.getFullYear();
+			var month = newDateObj.getMonth().toString();
+			if(month.length == 1) month = "0"+month;
+			var day = newDateObj.getDate().toString();
+			if(day.length == 1) day = "0"+day;
+			var hour = newDateObj.getHours().toString();
+			if(hour.length == 1) hour = "0"+hour;
+			var min = newDateObj.getMinutes().toString();
+			if(min.length == 1) min = "0"+min;
+			var sec = newDateObj.getSeconds().toString();
+			if(sec.length == 1) sec = "0"+sec;
+			//alert(year+"-"+month+"-"+day+"-"+hour+"-"+min+"-"+sec);
+			selected_end_time = year.toString()+month.toString()+day.toString()+hour.toString()+min.toString()+sec.toString();
+			selected_end_time_display = hour;
+			if(selected_end_time_display >= 24)
+			{
+				if(selected_end_time_display > 24)
+					selected_end_time_display -= 24;
+				else
+					selected_end_time_display -= 12;
+				selected_end_time_display = selected_end_time_display.toString() + ":" + min.toString() + "am";
+			}
+			else if(selected_end_time_display >= 12)
+			{
+				if(selected_end_time_display > 12)
+					selected_end_time_display -= 12;
+				selected_end_time_display = selected_end_time_display.toString() + ":" + min.toString() + "pm";
+			}
+			else if(selected_end_time_display == 0)
+			{
+				selected_end_time_display = "12:" + min.toString() + "am";
+			}
+			else
+			{
+				selected_end_time_display = selected_end_time_display.toString() + ":" + min.toString() + "am";
+			}
+			$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><b>Room "+rooms[selected_room]+"</b><br><img src='images/checkmark.gif' align='left' /> Start Time: "+selected_start_time_display+"<br><img src='images/checkmark.gif' align='left' /> End Time: "+selected_end_time_display+"<br><a href='<?php echo(WEB_ROOT); ?>confirm_reservation.php?selected_date=<?php print($todays_hours->date); ?>&room_id="+selected_room+"&start_time="+selected_start_time+"&end_time="+selected_end_time+"'><center><div style='margin-top:5px; padding:3px; background-color:#666; border-radius:4px; font-size:11px'>Confirm Reservation!</div></center></a>");
+		}
+		else if($(this).hasClass("no_time_to_start"))
+		{
+			// there is not enough time to satisfy the minimum reservation length with a start_time at this slot
+			alert("There is not enough time to satisfy the minimum reservation length of (<?php print(DEFAULT_MIN_RES_LEN); ?> minutes) with a starting time at this slot.");
+		}
+		else
+		{
+			// reset previous selection
+			$("#reservation_calendar td.slot_held").removeClass("slot_held").addClass("slot_available");
+			$("#reservation_calendar td.slot_held_fcfs").removeClass("slot_held_fcfs").addClass("slot_fcfs");
+			$("#reservation_calendar td.slot_held_light").addClass("slot_available");
+			$("#reservation_calendar td.slot_held_light_fcfs").addClass("slot_fcfs");
+			$("#reservation_calendar td").removeClass("slot_held_light");
+			$("#reservation_calendar td").removeClass("slot_held_light_fcfs");
+			
+			var slot_count = 1;
+			var selected_start_time_id = $(this).attr("id");
+			var selected_start_time_parts = selected_start_time_id.split("-");
+			selected_room = selected_start_time_parts[0];
+			selected_start_time = selected_start_time_parts[1];
+			selected_start_time_display = selected_start_time.substr(8,2);
+			if(selected_start_time_display >= 24)
+			{
+				if(selected_start_time_display > 24)
+					selected_start_time_display -= 24;
+				else
+					selected_start_time_display -= 12;
+				selected_start_time_display = selected_start_time_display.toString() + ":" + selected_start_time.substr(10,2) + "am";
+			}
+			else if(selected_start_time_display >= 12)
+			{
+				if(selected_start_time_display > 12)
+					selected_start_time_display -= 12;
+				selected_start_time_display = selected_start_time_display + ":" + selected_start_time.substr(10,2) + "pm";
+			}
+			else if(selected_start_time_display == 0)
+			{
+				selected_start_time_display = "12:" + selected_start_time.substr(10,2) + "am";
+			}
+			else
+			{
+				selected_start_time_display = selected_start_time_display.toString() + ":" + selected_start_time.substr(10,2) + "am";
+			}
+			$(this).addClass("slot_held");
+
+			var next = $(this).next();
+			
+			for(var j=1;j<max_reservation_length_slots;j++)
+			{
+				if( $(next).hasClass('slot_available'))
+				{
+					$(next).addClass("slot_held_light");
+					$(next).removeClass("slot_available");
+					next = $(next).next();
+					end_id = $(next).attr("id");
+				}
+				else
+					break;
+				
+				slot_count++;
+			}
+			
+		
+			// show tool tip
+			var pos = $(this).offset();
+			var width = $("#tooltip").width();
+			$("#tooltip").css( { "position":"absolute", "left": (pos.left + 8 - (width/2)) + "px", "top":pos.top-104 + "px" } );
+			$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><b>Room "+rooms[selected_room]+"</b><br><img src='images/checkmark.gif' align='left' /> Start Time: "+selected_start_time_display+"<br><br><br><center>Select End Time</center>");
+			$("#tooltip").show();
+		}
+	});
+	
+<?php
+if(!strcmp($user_type,'staff') || !strcmp($user_type,'admin'))
+{
+?>
+	
+
+	$("td.slot_fcfs").click(function() {
+		
+		
+		if($(this).hasClass("slot_held_light_fcfs"))
+		{
+			// TODO: account for RES_PRECISION == MIN_RES_LEN_MIN (allow end_time slot to be start_time slot in that case)
+		
+			$(this).addClass("slot_held_fcfs").removeClass("slot_held_light_fcfs");
+			var prev = $(this).prev();
+			while($(prev).hasClass('slot_held_light_fcfs'))
+			{
+				$(prev).addClass("slot_held_fcfs").removeClass("slot_held_light_fcfs");
+				prev = $(prev).prev();
+			}
+			
+			$("#reservation_calendar td.slot_held_light_fcfs").removeClass("slot_held_light_fcfs").addClass("slot_fcfs");
+			
+			var selected_end_time_id = $(this).attr("id");
+			var selected_end_time_parts = selected_end_time_id.split("-");
+			selected_room = selected_end_time_parts[0];
+			selected_end_time = selected_end_time_parts[1];
+			
+			// add res_presision to the time to get the ending time of the selected reservation
+			var year = selected_end_time.substring(0,4);
+			var month = selected_end_time.substring(4,6);
+			var day = selected_end_time.substring(6,8);
+			var hour = selected_end_time.substring(8,10);
+			var min = selected_end_time.substring(10,12);
+			var sec = selected_end_time.substring(12,14);
+			//alert(year+"-"+month+"-"+day+"-"+hour+"-"+min+"-"+sec);
+			var newDateObj = new Date();
+			var oldDateObj = new Date(year,month,day,hour,min,sec);
+			newDateObj.setTime(oldDateObj.getTime() + (<?php print(RES_PRECISION); ?> * 60 * 1000));
+			//alert(oldDateObj.toString());
+			//alert(newDateObj.toString());
+			var year = newDateObj.getFullYear();
+			var month = newDateObj.getMonth().toString();
+			if(month.length == 1) month = "0"+month;
+			var day = newDateObj.getDate().toString();
+			if(day.length == 1) day = "0"+day;
+			var hour = newDateObj.getHours().toString();
+			if(hour.length == 1) hour = "0"+hour;
+			var min = newDateObj.getMinutes().toString();
+			if(min.length == 1) min = "0"+min;
+			var sec = newDateObj.getSeconds().toString();
+			if(sec.length == 1) sec = "0"+sec;
+			//alert(year+"-"+month+"-"+day+"-"+hour+"-"+min+"-"+sec);
+			selected_end_time = year.toString()+month.toString()+day.toString()+hour.toString()+min.toString()+sec.toString();
+			selected_end_time_display = hour;
+			if(selected_end_time_display > 12)
+			{
+				selected_end_time_display -= 12;
+				selected_end_time_display = selected_end_time_display.toString() + ":" + min.toString() + "pm";
+			}
+			else
+			{
+				selected_end_time_display = selected_end_time_display.toString() + ":" + min.toString() + "am";
+			}
+			
+			$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><b>Room "+rooms[selected_room]+"</b><br><img src='images/checkmark.gif' align='left' /> Start Time: "+selected_start_time_display+"<br><img src='images/checkmark.gif' align='left' /> End Time: "+selected_end_time_display+"<br><a href='<?php echo(WEB_ROOT); ?>confirm_reservation.php?selected_date=<?php print($todays_hours->date); ?>&room_id="+selected_room+"&start_time="+selected_start_time+"&end_time="+selected_end_time+"'><center><div style='margin-top:5px; padding:3px; background-color:#666; border-radius:4px; font-size:11px'>Confirm Reservation!</div></center></a>");
+		}
+		else if($(this).hasClass("no_time_to_start"))
+		{
+			// there is not enough time to satisfy the minimum reservation length with a start_time at this slot
+			alert("there is not enough time to satisfy the minimum reservation length with a start_time at this slot");
+		}
+		else
+		{
+			// reset previous selection
+			$("#reservation_calendar td.slot_held").removeClass("slot_held").addClass("slot_available");
+			$("#reservation_calendar td.slot_held_fcfs").removeClass("slot_held_fcfs").addClass("slot_fcfs");
+			$("#reservation_calendar td.slot_held_light").addClass("slot_available");
+			$("#reservation_calendar td.slot_held_light_fcfs").addClass("slot_fcfs");
+			$("#reservation_calendar td").removeClass("slot_held_light");
+			$("#reservation_calendar td").removeClass("slot_held_light_fcfs");
+			
+			var slot_count = 1;
+			var selected_start_time_id = $(this).attr("id");
+			var selected_start_time_parts = selected_start_time_id.split("-");
+			selected_room = selected_start_time_parts[0];
+			selected_start_time = selected_start_time_parts[1];
+			selected_start_time_display = selected_start_time.substr(8,2);
+			if(selected_start_time_display > 12)
+			{
+				selected_start_time_display -= 12;
+				selected_start_time_display = selected_start_time_display + ":" + selected_start_time.substr(10,2) + "pm";
+			}
+			else if(selected_start_time_display == 0)
+			{
+				selected_start_time_display = "12:" + selected_start_time.substr(10,2) + "am";
+			}
+			else
+			{
+				selected_start_time_display = selected_start_time_display.toString() + ":" + selected_start_time.substr(10,2) + "am";
+			}
+			$(this).removeClass("slot_fcfs").addClass("slot_held_fcfs");
+
+			var next = $(this).next();
+			
+			for(var j=1;j<max_reservation_length_slots;j++)
+			{
+				if( $(next).hasClass('slot_fcfs'))
+				{
+					$(next).addClass("slot_held_light_fcfs");
+					$(next).removeClass("slot_fcfs");
+					next = $(next).next();
+					end_id = $(next).attr("id");
+				}
+				else
+					break;
+				
+				slot_count++;
+			}
+			
+		
+			// show tool tip
+			var pos = $(this).offset();
+			var width = $("#tooltip").width();
+			$("#tooltip").css( { "position":"absolute", "left": (pos.left + 8 - (width/2)) + "px", "top":pos.top-104 + "px" } );
+			$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><b>Room "+rooms[selected_room]+"</b><br><img src='images/checkmark.gif' align='left' /> Start Time: "+selected_start_time_display+"<br><br><br><center>Select End Time</center>");
+			$("#tooltip").show();
+
+		}
+	});
+<?php
+}
+?>
+
+		
+<?php
+if(!strcmp($user_type,'staff') || !strcmp($user_type,'admin'))
+{
+?>
+	$("td.slot_reserved").click(function() {
+		/*
+		// reset previous selection
+		$("#reservation_calendar td.slot_held").removeClass("slot_held").addClass("slot_available");
+		$("#reservation_calendar td.slot_held_fcfs").removeClass("slot_held_fcfs").addClass("slot_fcfs");
+		$("#reservation_calendar td.slot_held_light").addClass("slot_available");
+		$("#reservation_calendar td.slot_held_light_fcfs").addClass("slot_fcfs");
+		$("#reservation_calendar td").removeClass("slot_held_light");
+		$("#reservation_calendar td").removeClass("slot_held_light_fcfs");
+			
+		var reservation = $(this).attr("id");
+		var reservation_parts = reservation.split("_");
+		var reservation_id =  reservation_parts[0];
+		var patron_name = decodeURIComponent(reservation_parts[1]);
+				
+		// show tool tip
+		var pos = $(this).offset();
+		var width = $("#tooltip").width();
+		//alert("pos: " + pos.left + " " + pos.right + " width: " + width);
+		$("#tooltip").css( { "position":"absolute", "left": (pos.left + 8 - (width/2)) + "px", "top":pos.top-104 + "px" } );
+		//http://lib6.lib.pdx.edu/flakus/sr/reservations/cancel/315
+		if($(this).hasClass("checkoutable"))
+			$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><center><b>"+patron_name+"</b><br><a href='<?php print(WEB_ROOT.$user_type); ?>/reservations/checkout/"+reservation_id+"'>CHECK-OUT KEY</a><br><a href='<?php print(WEB_ROOT); ?>reservations/cancel/"+reservation_id+"' onclick='return confirm(&#039;Are you sure you want to cancel this reservation?&#039;);'>CANCEL RESERVATION</a><br><a href='<?php print(WEB_ROOT.$user_type); ?>/reservations/view/"+reservation_id+"'>RESERVATION DETAILS</a><br><a href='<?php print(WEB_ROOT.$user_type); ?>/reservations/edit/"+reservation_id+"'>EDIT RESERVATION</a></center>");
+		else
+			$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><center><b>"+patron_name+"</b><br><a href='<?php print(WEB_ROOT); ?>reservations/cancel/"+reservation_id+"' onclick='return confirm(&#039;Are you sure you want to cancel this reservation?&#039;);'>CANCEL RESERVATION</a><br><a href='<?php print(WEB_ROOT.$user_type); ?>/reservations/view/"+reservation_id+"'>RESERVATION DETAILS</a><br><a href='<?php print(WEB_ROOT.$user_type); ?>/reservations/edit/"+reservation_id+"'>EDIT RESERVATION</a></center>");
+		
+		$("#tooltip").show();
+		*/
+	});
+	
+	$("td.slot_checked_out").click(function() {
+	
+		// reset previous selection
+		$("#reservation_calendar td.slot_held").removeClass("slot_held").addClass("slot_available");
+		$("#reservation_calendar td.slot_held_fcfs").removeClass("slot_held_fcfs").addClass("slot_fcfs");
+		$("#reservation_calendar td.slot_held_light").addClass("slot_available");
+		$("#reservation_calendar td.slot_held_light_fcfs").addClass("slot_fcfs");
+		$("#reservation_calendar td").removeClass("slot_held_light");
+		$("#reservation_calendar td").removeClass("slot_held_light_fcfs");
+			
+		var reservation = $(this).attr("id");
+		var reservation_parts = reservation.split("_");
+		var reservation_id =  reservation_parts[0];
+		var patron_name = decodeURIComponent(reservation_parts[1]);
+				
+		// show tool tip
+		var pos = $(this).offset();
+		var width = $("#tooltip").width();
+		//alert("pos: " + pos.left + " " + pos.right + " width: " + width);
+		$("#tooltip").css( { "position":"absolute", "left": (pos.left + 8 - (width/2)) + "px", "top":pos.top-104 + "px" } );
+		//http://lib6.lib.pdx.edu/flakus/sr/reservations/cancel/315
+		$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><center><b>"+patron_name+"</b><br><br><a href='<?php print(WEB_ROOT.$user_type); ?>/reservations/checkin/"+reservation_id+"'>CHECK-IN KEY</a></center>");
+		
+		$("#tooltip").show();
+	});
+	
+	
+	$("td.slot_completed_reservation").click(function() {
+	
+		// reset previous selection
+		$("#reservation_calendar td.slot_held").removeClass("slot_held").addClass("slot_available");
+		$("#reservation_calendar td.slot_held_fcfs").removeClass("slot_held_fcfs").addClass("slot_fcfs");
+		$("#reservation_calendar td.slot_held_light").addClass("slot_available");
+		$("#reservation_calendar td.slot_held_light_fcfs").addClass("slot_fcfs");
+		$("#reservation_calendar td").removeClass("slot_held_light");
+		$("#reservation_calendar td").removeClass("slot_held_light_fcfs");
+			
+		var reservation = $(this).attr("id");
+		var reservation_parts = reservation.split("_");
+		var reservation_id =  reservation_parts[0];
+		var patron_name = decodeURIComponent(reservation_parts[1]);
+				
+		// show tool tip
+		var pos = $(this).offset();
+		var width = $("#tooltip").width();
+		//alert("pos: " + pos.left + " " + pos.right + " width: " + width);
+		$("#tooltip").css( { "position":"absolute", "left": (pos.left + 8 - (width/2)) + "px", "top":pos.top-104 + "px" } );
+		//http://lib6.lib.pdx.edu/flakus/sr/reservations/cancel/315
+		$("#tooltip").html("<a href='javascript:reset_calendar()'><img style='margin-top:-12px; margin-right:-12px; float:right' src='images/close_window.png'></a><center><b>"+patron_name+"</b><br><br>Reservation Completed</center>");
+		
+		$("#tooltip").show();
+	});
+	
+<?php
+}
+?>
+
+	$("td.slot_too_short").click(function() {
+		alert("timeslot too short");
+	});
+	
+	//$("body").click(function() {
+	//	if(on_cal==false)
+	//	{
+	//		alert("clear selections");
+	//	}
+	//});
+
+});
+</script>

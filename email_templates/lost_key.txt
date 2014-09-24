@@ -1,0 +1,4 @@
+Our records show that the key Study Room {room_number} has not been returned. We will bill your student account a non-refundable replacement fee of $135. If you have any questions, please contact the Circulation Desk: <a href='mailto:circ@lists.pdx.edu'>circ@lists.pdx.edu</a> or 503-725-5874.
+
+For more information, visit our <a href='http://development.library.pdx.edu/studyroomfaq.html'>Frequently Asked Questions (FAQ)</a>.
+

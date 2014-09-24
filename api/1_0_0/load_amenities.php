@@ -1,0 +1,1 @@
+<?phprequire_once("../../load.php");$options = array();if(isset($_GET['search_filter']))	$options['search_filter'] = $_GET['search_filter'];print(json_encode(load_amenities($options)));?>

@@ -1,0 +1,1 @@
+<?phprequire_once("../../load.php");$patron_id = $_GET['patron_id'];print(json_encode(find_users_by_name_or_patron_id($patron_id)));?>

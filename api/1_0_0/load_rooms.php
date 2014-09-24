@@ -1,0 +1,1 @@
+<?phprequire_once("../../load.php");if(isset($_GET['id']))	$id = $_GET['id'];else	$id = null;	if(isset($_GET['room_filter']))	$room_filter = json_decode($_GET['room_filter']);else	$room_filter = null;	print(json_encode(load_rooms($id,(array)$room_filter)));?>

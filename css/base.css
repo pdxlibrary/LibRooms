@@ -1,0 +1,38 @@
+#LibRooms li {list-style-type:none;}
+
+.error  {font-weight:bold; color:red; border-radius:10px; border:1px solid #F00; background-color:#FCC; padding:8px; margin:3px;}
+
+
+#admin_toolbar {background-color:#666; padding:5px; border:1px solid #FFF;}
+#admin_toolbar td {color:#FFF}
+#admin_toolbar td a {color:#FFF;}
+
+#checkin_reservation_form {width:600px; padding:8px; background-color:blue; color:#FFF; text-align:center; border-radius: 20px; margin-left:20px; margin-bottom:20px;}
+#checkin_reservation_form a {color:#FFF;}
+#checkout_reservation_form {width:600px; padding:8px; background-color:green; color:#FFF; text-align:center; border-radius: 20px; margin-left:20px; margin-bottom:20px;}
+#checkout_reservation_form a {color:#FFF;}
+
+#upcoming_reservations_table td {font-size:11px; }
+#upcoming_reservations_table th {font-size:13px; }
+#reservation_history_table td {font-size:11px; }
+#reservation_history_table th {font-size:13px; }
+#checked_out_reservations_table td {font-size:11px; }
+#checked_out_reservations_table th {font-size:13px; }
+#usage_report_table td {font-size:11px; }
+#usage_report_table th {font-size:13px; }
+#fine_report_table td {font-size:11px; }
+#fine_report_table th {font-size:11px; }
+#overdue_report_table td {font-size:11px; }
+#overdue_report_table th {font-size:13px; }
+
+
+#key_barcode_form_field {}
+
+#lost_key_button {margin-left:20px; background-color:red; color:#FFF; border:0px;}
+#reschedule_note {border:1px solid #999; color:#444; background-color:#FF8; border-radius:10px; padding:5px; margin-bottom:5px;}
+#available_credits_widget {font-size:10px; text-align:left; padding:5px;}
+
+legend {padding: 3px; border:1px solid #999;  font-size:90%; text-align:right; }
+
+.editable {background-color:#EBEBAF; padding:3px; height:20px;}
+.editable_text {}

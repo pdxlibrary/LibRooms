@@ -1,0 +1,6 @@
+Your reservation for Practice Presentation Room {room_number} from {reservation_start_time} - {reservation_end_time} on {reservation_date} has been confirmed.
+The key will be available for checkout at the Circulation Desk on the 1st floor of the library.  Please arrive no earlier than 5 minutes before your scheduled time, as another group may be using the room.
+
+For more information, visit our <a href='{reservation_calendar_url}'>Reservation System</a>.
+
+Thank you for reserving a study room.

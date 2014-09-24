@@ -1,0 +1,9 @@
+:: for emailing ::
+Mail
+Mail_Mime
+Net_SMTP
+Net_Socket
+
+:: for database abstraction ::
+DB
+MDB2

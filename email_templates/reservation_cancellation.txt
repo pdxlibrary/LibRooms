@@ -1,0 +1,3 @@
+Your reservation for Study Room {room_number} from {reservation_start_time} - {reservation_end_time} on {reservation_date} has been cancelled. If you need to book another Study Room visit our <a href='{reservation_calendar_url}'>Reservation System</a>. 
+
+{cancellation_reason}

@@ -1,0 +1,5 @@
+value:60
+id:setting1
+table:settings
+field:value
+row_id:1
